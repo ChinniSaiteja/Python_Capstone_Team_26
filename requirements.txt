@@ -1,0 +1,2 @@
+python-dotenv>=1.0
+mysql-connector-python>=8.0   # only needed when DB_ENGINE=mysql
