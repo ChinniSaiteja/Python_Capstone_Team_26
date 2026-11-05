@@ -13,7 +13,11 @@ Every class has:
     1. a constructor (__init__)          -> state initialisation
     2. initialisation methods            -> from_dict() / validate() / to_dict()
     3. encapsulation (getters & setters) -> private attributes + @property
+
+Invalid values raise InvalidDataError (see exceptions.py, Home Assignment 4).
 """
+
+from database.exceptions import InvalidDataError
 
 
 class WasteCategory:
@@ -44,7 +48,7 @@ class WasteCategory:
     @id.setter
     def id(self, value: int) -> None:
         if not isinstance(value, int) or value <= 0:
-            raise ValueError("id must be a positive integer")
+            raise InvalidDataError("id", value, "must be a positive integer")
         self.__id = value
 
     @property
@@ -55,7 +59,7 @@ class WasteCategory:
     def name(self, value: str) -> None:
         value = str(value).strip().lower()
         if value not in self.ALLOWED_NAMES:
-            raise ValueError(f"Invalid category '{value}'. Allowed: {self.ALLOWED_NAMES}")
+            raise InvalidDataError("category", value, f"allowed: {', '.join(self.ALLOWED_NAMES)}")
         self.__name = value
 
     @property
@@ -105,7 +109,7 @@ class WasteItem:
     @id.setter
     def id(self, value: int) -> None:
         if not isinstance(value, int) or value <= 0:
-            raise ValueError("id must be a positive integer")
+            raise InvalidDataError("id", value, "must be a positive integer")
         self.__id = value
 
     @property
@@ -117,9 +121,9 @@ class WasteItem:
         # labels must match the classifier output exactly -> lowercase, no extra spaces
         value = str(value).strip().lower()
         if not value:
-            raise ValueError("label must not be empty")
+            raise InvalidDataError("label", value, "must not be empty")
         if len(value) > 100:
-            raise ValueError("label must be at most 100 characters")
+            raise InvalidDataError("label", value, "must be at most 100 characters")
         self.__label = value
 
     @property
@@ -129,7 +133,7 @@ class WasteItem:
     @category.setter
     def category(self, value: WasteCategory) -> None:
         if not isinstance(value, WasteCategory):
-            raise TypeError("category must be a WasteCategory object")
+            raise InvalidDataError("category", value, "must be a WasteCategory object")
         self.__category = value
 
     @property
@@ -139,7 +143,7 @@ class WasteItem:
     @is_deposit.setter
     def is_deposit(self, value: bool) -> None:
         if not isinstance(value, bool):
-            raise TypeError("is_deposit must be True or False")
+            raise InvalidDataError("is_deposit", value, "must be True or False")
         self.__is_deposit = value
 
     def __str__(self) -> str:
@@ -188,7 +192,7 @@ class DisposalRule:
     @id.setter
     def id(self, value: int) -> None:
         if not isinstance(value, int) or value <= 0:
-            raise ValueError("id must be a positive integer")
+            raise InvalidDataError("id", value, "must be a positive integer")
         self.__id = value
 
     @property
@@ -198,7 +202,7 @@ class DisposalRule:
     @item.setter
     def item(self, value: WasteItem) -> None:
         if not isinstance(value, WasteItem):
-            raise TypeError("item must be a WasteItem object")
+            raise InvalidDataError("item", value, "must be a WasteItem object")
         self.__item = value
 
     @property
@@ -209,7 +213,7 @@ class DisposalRule:
     def bin_type(self, value: str) -> None:
         value = str(value).strip()
         if not value:
-            raise ValueError("bin_type must not be empty")
+            raise InvalidDataError("bin_type", value, "must not be empty")
         self.__bin_type = value
 
     @property
@@ -220,7 +224,7 @@ class DisposalRule:
     def instruction(self, value: str) -> None:
         value = str(value).strip()
         if not value:
-            raise ValueError("instruction must not be empty")
+            raise InvalidDataError("instruction", value, "must not be empty")
         self.__instruction = value
 
     @property
@@ -231,7 +235,7 @@ class DisposalRule:
     def region(self, value: str) -> None:
         value = str(value).strip().title()
         if not value:
-            raise ValueError("region must not be empty")
+            raise InvalidDataError("region", value, "must not be empty")
         self.__region = value
 
     def __str__(self) -> str:

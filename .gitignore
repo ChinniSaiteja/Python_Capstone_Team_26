@@ -1,0 +1,11 @@
+.env
+database/waste.db
+__pycache__/
+*.pyc
+.venv/
+venv/
+.idea/
+.DS_Store
+.pytest_cache/
+.coverage
+htmlcov/

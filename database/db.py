@@ -22,6 +22,8 @@ import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
 
+from database.exceptions import (DatabaseConnectionError, DataManagementError,
+                                 InvalidDataError, ItemNotFoundError)
 from database.models import DisposalRule, WasteCategory, WasteItem
 
 try:  # optional: read settings from a .env file
@@ -67,7 +69,7 @@ class DatabaseManager:
     def engine(self, value: str) -> None:
         value = str(value).strip().lower()
         if value not in self.ALLOWED_ENGINES:
-            raise ValueError(f"DB_ENGINE must be one of {self.ALLOWED_ENGINES}")
+            raise InvalidDataError("DB_ENGINE", value, f"must be one of {self.ALLOWED_ENGINES}")
         self.__engine = value
 
     @property
@@ -77,7 +79,7 @@ class DatabaseManager:
     @db_path.setter
     def db_path(self, value: str) -> None:
         if not value:
-            raise ValueError("db_path must not be empty")
+            raise InvalidDataError("db_path", value, "must not be empty")
         self.__db_path = str(value)
 
     @property
@@ -96,22 +98,36 @@ class DatabaseManager:
 
     @contextmanager
     def __connect(self):
-        """Open a connection, give back a cursor that returns dict rows, commit at the end."""
-        if self.__engine == "sqlite":
-            Path(self.__db_path).parent.mkdir(parents=True, exist_ok=True)
-            conn = sqlite3.connect(self.__db_path)
-            conn.row_factory = sqlite3.Row
-            conn.execute("PRAGMA foreign_keys = ON")
-            cursor = conn.cursor()
-        else:
-            import mysql.connector  # only needed when DB_ENGINE=mysql
-            conn = mysql.connector.connect(database=self.__db_name, **self.__mysql_config)
-            cursor = conn.cursor(dictionary=True)
+        """Open a connection, give back a cursor that returns dict rows, commit at the end.
+
+        Error handling (Home Assignment 4):
+          - connection problems  -> DatabaseConnectionError
+          - broken constraints   -> InvalidDataError (e.g. duplicate feedback, unknown id)
+          - any error            -> rollback, so the database never keeps half-saved data
+        """
+        try:
+            if self.__engine == "sqlite":
+                Path(self.__db_path).parent.mkdir(parents=True, exist_ok=True)
+                conn = sqlite3.connect(self.__db_path)
+                conn.row_factory = sqlite3.Row
+                conn.execute("PRAGMA foreign_keys = ON")
+                cursor = conn.cursor()
+            else:
+                import mysql.connector  # only needed when DB_ENGINE=mysql
+                conn = mysql.connector.connect(database=self.__db_name, **self.__mysql_config)
+                cursor = conn.cursor(dictionary=True)
+        except Exception as error:
+            raise DatabaseConnectionError(self.__engine, error) from error
         try:
             yield cursor
             conn.commit()
-        except Exception:
+        except DataManagementError:
             conn.rollback()
+            raise
+        except Exception as error:
+            conn.rollback()
+            if "IntegrityError" in type(error).__name__:
+                raise InvalidDataError("record", None, f"violates a database rule: {error}") from error
             raise
         finally:
             cursor.close()
@@ -119,7 +135,10 @@ class DatabaseManager:
 
     def __create_mysql_database(self) -> None:
         import mysql.connector
-        conn = mysql.connector.connect(**self.__mysql_config)
+        try:
+            conn = mysql.connector.connect(**self.__mysql_config)
+        except Exception as error:
+            raise DatabaseConnectionError("mysql", error) from error
         cur = conn.cursor()
         cur.execute(
             f"CREATE DATABASE IF NOT EXISTS `{self.__db_name}` "
@@ -157,8 +176,13 @@ class DatabaseManager:
     @staticmethod
     def load_guidance_file(path: str | Path = DEFAULT_SEED_FILE) -> list[DisposalRule]:
         """Read waste_guidance.json and turn every entry into model objects."""
-        with open(path, encoding="utf-8") as f:
-            data = json.load(f)
+        try:
+            with open(path, encoding="utf-8") as f:
+                data = json.load(f)
+        except FileNotFoundError:
+            raise ItemNotFoundError("seed file", str(path)) from None
+        except json.JSONDecodeError as error:
+            raise InvalidDataError("seed file", str(path), f"is not valid JSON ({error})") from None
         region = data.get("region", DisposalRule.DEFAULT_REGION)
         categories = {c["name"]: WasteCategory.from_dict(c) for c in data["categories"]}
         rules = []
@@ -216,6 +240,13 @@ class DatabaseManager:
         rule = DisposalRule(row["rule_id"], item, row["bin_type"], row["instruction"], row["region"])
         return rule.to_dict()
 
+    def require_rule(self, label: str, region: str = DisposalRule.DEFAULT_REGION) -> dict:
+        """Like get_rule(), but raises ItemNotFoundError instead of returning None."""
+        rule = self.get_rule(label, region)
+        if rule is None:
+            raise ItemNotFoundError("disposal rule", label.strip().lower(), region.strip().title())
+        return rule
+
     def get_all_items(self) -> list[WasteItem]:
         """All known labels (useful for the classifier team and for tests)."""
         with self.__connect() as cur:
@@ -236,11 +267,18 @@ class DatabaseManager:
                             status: str = "completed",
                             region: str = DisposalRule.DEFAULT_REGION) -> int:
         """Backend: store one classification result. Returns the new id."""
-        label = label.strip().lower()
+        label = str(label or "").strip().lower()
+        if not label:
+            raise InvalidDataError("label", label, "must not be empty")
         if status not in self.ALLOWED_STATUS:
-            raise ValueError(f"status must be one of {self.ALLOWED_STATUS}")
-        if confidence is not None and not 0.0 <= float(confidence) <= 1.0:
-            raise ValueError("confidence must be between 0 and 1")
+            raise InvalidDataError("status", status, f"must be one of {self.ALLOWED_STATUS}")
+        if confidence is not None:
+            try:
+                confidence = float(confidence)
+            except (TypeError, ValueError):
+                raise InvalidDataError("confidence", confidence, "must be a number") from None
+            if not 0.0 <= confidence <= 1.0:
+                raise InvalidDataError("confidence", confidence, "must be between 0 and 1")
         with self.__connect() as cur:
             cur.execute(self.__sql("SELECT id FROM waste_items WHERE label = ?"), (label,))
             row = cur.fetchone()
@@ -255,6 +293,9 @@ class DatabaseManager:
                       correct_label: str | None = None) -> None:
         """Backend: store the answer of the 'Wrong result?' button."""
         with self.__connect() as cur:
+            cur.execute(self.__sql("SELECT id FROM classifications WHERE id = ?"), (classification_id,))
+            if cur.fetchone() is None:
+                raise ItemNotFoundError("classification", classification_id)
             cur.execute(self.__sql("""
                 INSERT INTO user_feedback (classification_id, is_correct, correct_label)
                 VALUES (?, ?, ?)
