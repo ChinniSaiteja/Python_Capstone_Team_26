@@ -18,3 +18,7 @@ database/waste.db
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Classifier evaluation outputs and local test photos
+results/
+test_images/

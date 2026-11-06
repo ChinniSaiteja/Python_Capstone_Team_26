@@ -136,10 +136,51 @@ The current test suite contains 11 tests, covering validation, guidance retrieva
 
 
 ## Subsystem 3 - Image Classifier Model (Azam Rahmani)
- 
 
+The classifier receives one waste image from the backend and returns the item label,
+its category (recyclable / compostable / landfill), a confidence score and a status.
+It uses the pretrained CLIP model `openai/clip-vit-base-patch32` in zero-shot mode,
+so no training is needed. Code: `classifier/`.
 
+**Classes (Home Assignment 1):**
 
+| Class | Responsibility |
+|---|---|
+| `WasteClassifier` | Entry point for the backend: validate → preprocess → predict → map category → result. Never raises; every failure becomes a status. |
+| `ImagePreprocessor` | Checks the upload (empty, broken, too large, unsupported format) and prepares it (EXIF rotation, RGB, 224×224). |
+| `CategoryMapper` | Maps a predicted item label to its category and flags low confidence. |
+| `ZeroShotClipModel` (subclass of abstract `ClassifierModel`) | Runs CLIP and returns the best label and its confidence. |
+| `ClassifierConfig`, `PredictionResult`, `ModelEvaluator` | Settings, the structured result, and accuracy/speed evaluation. |
+
+Each class has a constructor (`__init__`), an initialisation method (`warm_up()` loads the model
+at app start) and encapsulation with `@property` getters and validating setters
+(`WasteClassifier.confidence_threshold`, `CategoryMapper.label_to_category`, `ImagePreprocessor.config`).
+
+**How the backend calls it:**
+
+```python
+from classifier import WasteClassifier
+
+classifier = WasteClassifier()   # once, at app start
+classifier.warm_up()             # load the model before the first request
+result = classifier.classify(request.files["image"].read())
+# {"status": "completed", "label": "glass jar", "category": "recyclable",
+#  "confidence": 0.92, "message": "", "inference_ms": 140.3}
+```
+
+The labels are exactly the item labels in `data/waste_guidance.json`, so the backend can pass
+`result["label"]` straight to `DatabaseManager.get_rule(label)`.
+
+| status | meaning |
+|---|---|
+| `completed` | confident prediction |
+| `uncertain` | confidence below 0.5, the result should be shown as uncertain |
+| `invalid_image` | empty, broken, unsupported or too large file (`message` explains) |
+| `error` | the model failed ("The classifier is currently unavailable") |
+
+**Run:** `python scripts/classify_image.py photo.jpg` (the first run downloads the model, about 600 MB).
+**Tests:** `tests/test_preprocessor.py`, `test_category_mapper.py`, `test_waste_classifier.py`, `test_evaluator.py` (a fake model, no download needed).
+**Details and class diagram:** [docs/CLASSIFIER.md](docs/CLASSIFIER.md).
 
 ## Subsystem 4 - Data Management & AI Guidance (Ha Le Thu)
 
