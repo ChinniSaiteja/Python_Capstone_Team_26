@@ -68,6 +68,10 @@ The Backend & Application Integration subsystem connects the waste classificatio
 | `GuidanceService` | Retrieves disposal guidance using the classified waste label and region and saves the classification result through the existing `DatabaseManager`. |
 | `ResponseComposer` | Combines the classification result and disposal guidance into a structured API response for the frontend. |
 
+#### UML Class Diagram
+
+![Backend & Application Integration Class Diagram](docs/class_diagram_backend.png)
+
 #### Backend Flow
 
 ```text
