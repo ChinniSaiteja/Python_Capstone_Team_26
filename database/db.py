@@ -359,3 +359,51 @@ class DatabaseManager:
             "uncertain_count": int(totals["uncertain"] or 0),
             "wrong_feedback_count": int(wrong or 0),
         }
+
+    # ------------------------------------------------------------------
+    # AI guidance support (used by GuidanceService, capstone)
+    # ------------------------------------------------------------------
+    def get_cached_guidance(self, label: str) -> str | None:
+        """Return a stored AI explanation for this item, or None."""
+        with self.__connect() as cur:
+            cur.execute(self.__sql("""
+                SELECT g.answer FROM ai_guidance g
+                JOIN waste_items w ON w.id = g.item_id
+                WHERE w.label = ? AND g.question IS NULL
+                ORDER BY g.id DESC
+            """), (label.strip().lower(),))
+            row = cur.fetchone()
+        return row["answer"] if row else None
+
+    def save_guidance(self, label: str, answer: str) -> bool:
+        """Cache an AI explanation. Returns False if the label is not in waste_items."""
+        if not str(answer or "").strip():
+            raise InvalidDataError("answer", answer, "must not be empty")
+        with self.__connect() as cur:
+            cur.execute(self.__sql("SELECT id FROM waste_items WHERE label = ?"),
+                        (label.strip().lower(),))
+            row = cur.fetchone()
+            if row is None:
+                return False
+            cur.execute(self.__sql("INSERT INTO ai_guidance (item_id, question, answer) VALUES (?, NULL, ?)"),
+                        (row["id"], answer.strip()))
+        return True
+
+    def get_ai_usage(self, usage_date: str) -> int:
+        """Number of AI calls on one day ('YYYY-MM-DD')."""
+        with self.__connect() as cur:
+            cur.execute(self.__sql("SELECT request_count FROM ai_usage_log WHERE usage_date = ?"),
+                        (usage_date,))
+            row = cur.fetchone()
+        return int(row["request_count"]) if row else 0
+
+    def increment_ai_usage(self, usage_date: str) -> int:
+        """Add 1 to today's AI counter and return the new value."""
+        with self.__connect() as cur:
+            cur.execute(self.__sql(
+                f"{self.__insert_ignore()} INTO ai_usage_log (usage_date, request_count) VALUES (?, 0)"),
+                (usage_date,))
+            cur.execute(self.__sql(
+                "UPDATE ai_usage_log SET request_count = request_count + 1 WHERE usage_date = ?"),
+                (usage_date,))
+        return self.get_ai_usage(usage_date)
