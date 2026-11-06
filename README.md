@@ -63,6 +63,8 @@ The project aims to support waste sorting and recycling by using an AI-based ima
 
 #### UML Class Diagram
 
+![Web Interface Class Diagram]
+
 ## Subsystem 2 - Backend & Application Integration (Sai Teja Chinni)
 
 The Backend & Application Integration subsystem connects the waste classification result with the data management and guidance components and prepares a consistent response for the frontend.
