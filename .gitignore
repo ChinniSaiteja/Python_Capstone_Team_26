@@ -1,11 +1,20 @@
+# Environment and secrets
 .env
-database/waste.db
-__pycache__/
-*.pyc
 .venv/
 venv/
+
+# Python temporary files
+__pycache__/
+*.py[cod]
+
+# Database files
+database/waste.db
+
+# IDE and operating system files
 .idea/
 .DS_Store
+
+# Testing and coverage
 .pytest_cache/
 .coverage
 htmlcov/
