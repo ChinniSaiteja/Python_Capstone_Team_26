@@ -63,7 +63,9 @@ The project aims to support waste sorting and recycling by using an AI-based ima
 
 #### UML Class Diagram
 
-![Web Interface Class Diagram]
+<img width="787" height="327" alt="image" src="https://github.com/user-attachments/assets/166fb881-ac7d-44aa-b2aa-7b6f13030892" />
+
+
 
 ## Subsystem 2 - Backend & Application Integration (Sai Teja Chinni)
 
