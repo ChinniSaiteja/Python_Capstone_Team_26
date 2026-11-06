@@ -53,8 +53,15 @@ The project aims to support waste sorting and recycling by using an AI-based ima
 
 ## Subsystem 1 - Frontend Interface (Kanika Sehgal)
 
+#### Implemented Classes
 
+| Class | Responsibility |
+|---|---|
+| `ClassificationResultHandler` | Validates and normalizes the classification result received from the ML classifier. It handles the waste label, confidence, status, and region. |
+| `GuidanceService` | Retrieves disposal guidance using the classified waste label and region and saves the classification result through the existing `DatabaseManager`. |
+| `ResponseComposer` | Combines the classification result and disposal guidance into a structured API response for the frontend. |
 
+#### UML Class Diagram
 
 ## Subsystem 2 - Backend & Application Integration (Sai Teja Chinni)
 
