@@ -35,6 +35,37 @@ The result always contains the same fields:
 `data/waste_guidance.json` (lowercase with spaces, e.g. `banana peel`), so the
 backend can pass it straight to `get_rule(label)`. The category matches that file too.
 
+## Object detection: every item with a bounding box
+
+`WasteDetector` finds **all** waste items in one photo. It uses the pretrained
+zero-shot detector OWL-ViT (`google/owlvit-base-patch32`), which is built on CLIP and
+reads the same item labels, so no training is needed either.
+
+```python
+from classifier import WasteDetector
+
+detector = WasteDetector()
+detector.warm_up()
+result = detector.detect_dict(request.files["image"].read())
+```
+
+```json
+{"status": "completed", "count": 2, "message": "", "inference_ms": 850.2,
+ "objects": [
+   {"label": "plastic bottle", "category": "recyclable", "confidence": 0.41,
+    "bounding_box": [10, 5, 20, 40], "status": "completed"},
+   {"label": "aluminium can", "category": "recyclable", "confidence": 0.30,
+    "bounding_box": [40, 10, 15, 25], "status": "completed"}]}
+```
+
+- `bounding_box` is `[x, y, width, height]` in pixels of the uploaded photo (no cropping).
+- Each object has its own `status`: `completed` or `uncertain` (score below
+  `detection_threshold`, default 0.2). OWL-ViT scores are lower than CLIP probabilities,
+  so this threshold is lower than the classifier's 0.5.
+- The whole result is `completed` if at least one object is confident, `uncertain` if
+  nothing confident was found, and `invalid_image` / `error` as for the classifier.
+- When the model boxes the same item twice with different labels, only the best label is kept.
+
 ## Class diagram
 
 ```mermaid
@@ -90,6 +121,28 @@ classDiagram
         +plot_confusion_matrix(report, categories, path)
     }
     class InvalidImageError
+    class WasteDetector {
+        +detection_threshold: float
+        +detect(image) DetectionResult
+        +detect_dict(image) dict
+    }
+    class DetectionModel {
+        <<abstract>>
+        +detect(image) list
+    }
+    class ZeroShotOwlVitModel
+    class DetectionResult {
+        +status: ClassifierStatus
+        +objects: list~DetectedObject~
+        +to_dict() dict
+    }
+    class DetectedObject {
+        +label: str
+        +category: str
+        +confidence: float
+        +bounding_box: tuple
+        +status: ClassifierStatus
+    }
 
     WasteClassifier --> ClassifierConfig
     WasteClassifier --> ImagePreprocessor
@@ -100,6 +153,12 @@ classDiagram
     PredictionResult --> ClassifierStatus
     ImagePreprocessor ..> InvalidImageError : raises
     ModelEvaluator --> WasteClassifier
+    WasteDetector --> ImagePreprocessor
+    WasteDetector --> CategoryMapper
+    WasteDetector --> DetectionModel
+    DetectionModel <|-- ZeroShotOwlVitModel
+    WasteDetector ..> DetectionResult : creates
+    DetectionResult *-- DetectedObject
 ```
 
 ## Setup

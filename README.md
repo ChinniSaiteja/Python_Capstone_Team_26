@@ -151,11 +151,13 @@ so no training is needed. Code: `classifier/`.
 | `ImagePreprocessor` | Checks the upload (empty, broken, too large, unsupported format) and prepares it (EXIF rotation, RGB, 224×224). |
 | `CategoryMapper` | Maps a predicted item label to its category and flags low confidence. |
 | `ZeroShotClipModel` (subclass of abstract `ClassifierModel`) | Runs CLIP and returns the best label and its confidence. |
-| `ClassifierConfig`, `PredictionResult`, `ModelEvaluator` | Settings, the structured result, and accuracy/speed evaluation. |
+| `WasteDetector` | Finds every item in the photo with its bounding box; removes duplicate boxes for the same item. |
+| `ZeroShotOwlVitModel` (subclass of abstract `DetectionModel`) | Runs OWL-ViT and returns label, score and box per object. |
+| `ClassifierConfig`, `PredictionResult`, `DetectionResult`, `DetectedObject`, `ModelEvaluator` | Settings, the structured results, and accuracy/speed evaluation. |
 
 Each class has a constructor (`__init__`), an initialisation method (`warm_up()` loads the model
 at app start) and encapsulation with `@property` getters and validating setters
-(`WasteClassifier.confidence_threshold`, `CategoryMapper.label_to_category`, `ImagePreprocessor.config`).
+(`WasteClassifier.confidence_threshold`, `WasteDetector.detection_threshold`, `CategoryMapper.label_to_category`, `ImagePreprocessor.config`).
 
 **How the backend calls it:**
 
@@ -172,6 +174,25 @@ result = classifier.classify(request.files["image"].read())
 The labels are exactly the item labels in `data/waste_guidance.json`, so the backend can pass
 `result["label"]` straight to `DatabaseManager.get_rule(label)`.
 
+**Object detection (several items + bounding boxes):** `WasteDetector` uses the pretrained
+zero-shot detector OWL-ViT (`google/owlvit-base-patch32`) with the same labels. It returns
+every item found, each with `label`, `category`, `confidence`, `bounding_box` (`[x, y, width, height]`
+in pixels of the photo) and its own `status`. About 1.4 s per photo on a laptop CPU.
+
+```python
+from classifier import WasteDetector
+
+detector = WasteDetector()
+detector.warm_up()
+result = detector.detect_dict(image_bytes)
+# {"status": "completed", "count": 2, "message": "", "inference_ms": 1390.5,
+#  "objects": [{"label": "plastic bottle", "category": "recyclable", "confidence": 0.41,
+#               "bounding_box": [10, 5, 20, 40], "status": "completed"}, ...]}
+```
+
+OWL-ViT scores are lower than CLIP probabilities, so an object counts as confident from 0.2
+(`detection_threshold`), not 0.5.
+
 | status | meaning |
 |---|---|
 | `completed` | confident prediction |
@@ -180,7 +201,7 @@ The labels are exactly the item labels in `data/waste_guidance.json`, so the bac
 | `error` | the model failed ("The classifier is currently unavailable") |
 
 **Run:** `python scripts/classify_image.py photo.jpg` (the first run downloads the model, about 600 MB).
-**Tests:** `tests/test_preprocessor.py`, `test_category_mapper.py`, `test_waste_classifier.py`, `test_evaluator.py` (a fake model, no download needed).
+**Tests:** `tests/test_preprocessor.py`, `test_category_mapper.py`, `test_waste_classifier.py`, `test_waste_detector.py`, `test_evaluator.py` (fake models, no download needed).
 **Details and class diagram:** [docs/CLASSIFIER.md](docs/CLASSIFIER.md).
 
 ## Subsystem 4 - Data Management & AI Guidance (Ha Le Thu)

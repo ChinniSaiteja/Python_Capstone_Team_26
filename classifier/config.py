@@ -13,8 +13,20 @@ class ClassifierConfig:
     prompt_template: str = "a photo of {}"
     device: str = field(default="cpu")
 
+    # Object detection (WasteDetector). OWL-ViT scores are much lower than CLIP's
+    # probabilities: a correct object often scores 0.1-0.4, so the thresholds differ.
+    detector_model_name: str = "google/owlvit-base-patch32"
+    detection_threshold: float = 0.2   # objects below this are "uncertain"
+    min_detection_score: float = 0.05  # objects below this are dropped
+    max_objects: int = 10
+    overlap_iou: float = 0.5           # boxes overlapping more than this are one object
+
     def __post_init__(self):
-        if not 0.0 <= self.confidence_threshold <= 1.0:
-            raise ValueError("confidence_threshold must be between 0 and 1")
+        for name in ("confidence_threshold", "detection_threshold",
+                     "min_detection_score", "overlap_iou"):
+            if not 0.0 <= getattr(self, name) <= 1.0:
+                raise ValueError(f"{name} must be between 0 and 1")
+        if self.max_objects <= 0:
+            raise ValueError("max_objects must be positive")
         if self.image_size <= 0:
             raise ValueError("image_size must be positive")

@@ -65,6 +65,11 @@ class ImagePreprocessor:
             )
         return image
 
+    def prepare_for_detection(self, image: Image.Image) -> Image.Image:
+        """Fix rotation and colour mode but keep the full size, so bounding boxes
+        are in the coordinates of the uploaded photo."""
+        return ImageOps.exif_transpose(image).convert("RGB")
+
     def preprocess(self, image: Image.Image) -> Image.Image:
         """Fix phone rotation, convert to RGB and resize (NFR 4: robustness)."""
         image = ImageOps.exif_transpose(image)
