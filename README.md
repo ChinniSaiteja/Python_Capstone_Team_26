@@ -63,7 +63,8 @@ The project aims to support waste sorting and recycling by using an AI-based ima
 
 #### UML Class Diagram
 
-<img width="787" height="327" alt="image" src="https://github.com/user-attachments/assets/166fb881-ac7d-44aa-b2aa-7b6f13030892" />
+<img width="1277" height="412" alt="image" src="https://github.com/user-attachments/assets/38c98abe-54c8-4682-aa7b-7c332db58338" />
+
 
 
 
