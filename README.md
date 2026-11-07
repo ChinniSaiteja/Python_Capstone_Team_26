@@ -14,10 +14,10 @@
 <img width="660" height="110" alt="image" src="https://github.com/user-attachments/assets/9e7473f9-bdca-430d-a4d7-b017295c7563" />
 
 #### Requirements
-1.Python 3.12
-2.MySQL Server 8.x (and optionally MySQL Workbench)
-3.Python packages listed in requirement.txt:
-   Flask,mysql-connector-python, python-dotenv
+## 1.Python 3.12
+## 2.MySQL Server 8.x (and optionally MySQL Workbench)
+## 3.Python packages listed in requirement.txt:
+##### Flask,mysql-connector-python, python-dotenv
    
 
 
