@@ -77,9 +77,9 @@ The Backend & Application Integration subsystem connects the waste classificatio
 
 | Class | Responsibility |
 |---|---|
-| `ClassificationResultHandler` | Validates and normalizes the classification result received from the ML classifier. It handles the waste label, confidence, status, and region. |
-| `GuidanceService` | Retrieves disposal guidance using the classified waste label and region and saves the classification result through the existing `DatabaseManager`. |
-| `ResponseComposer` | Combines the classification result and disposal guidance into a structured API response for the frontend. |
+| `WasteUploadView` | Stores the uploaded image and its metadata |
+| `AnalysisController` | Validates the image and coordinates analysis |
+| `ClassificationResultView` | Processes the result and prepares the information to display |
 
 #### UML Class Diagram
 
