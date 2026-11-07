@@ -1,0 +1,77 @@
+@startuml
+
+skinparam classAttributeIconSize 0
+
+abstract class PipelineStage<T, R> {
+    - __name: str
+    - __initialized: bool
+
+    + __init__(name: str)
+    + initialize(): None
+    + process(data: T): R
+    + name: str
+    + initialized: bool
+}
+
+class ConfidenceFilter {
+    - __threshold: float
+
+    + __init__(threshold: float)
+    + initialize(): None
+    + process(data: RecognitionEvent): RecognitionEvent | None
+    + threshold: float
+}
+
+class MaterialTransformer {
+    - __material_mapping: dict
+    - __routing_mapping: dict
+
+    + __init__()
+    + initialize(): None
+    + process(data: RecognitionEvent): RecognitionEvent
+    + material_mapping: dict
+    + routing_mapping: dict
+}
+
+class RecognitionEvent {
+    + label: str
+    + confidence: float
+    + bounding_box: tuple
+    + visual_tags: list
+    + material: str
+    + routing_code: str
+    + accepted: bool
+
+    + to_dict(): dict
+}
+
+class SortingPipeline {
+    - __stages: list
+
+    + __init__()
+    + add_stage(stage): SortingPipeline
+    + __or__(other): SortingPipeline
+    + process(event): RecognitionEvent | None
+    + process_stream(events): list
+}
+
+class EventGenerator {
+    - __events: list
+    - __index: int
+
+    + __init__(events)
+    + initialize(): None
+    + __iter__(): EventGenerator
+    + __next__(): RecognitionEvent
+    + reset(): None
+}
+
+PipelineStage <|-- ConfidenceFilter
+PipelineStage <|-- MaterialTransformer
+
+ConfidenceFilter --> RecognitionEvent
+MaterialTransformer --> RecognitionEvent
+SortingPipeline o-- PipelineStage
+EventGenerator --> RecognitionEvent
+
+@enduml
