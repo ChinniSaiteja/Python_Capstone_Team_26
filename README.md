@@ -1,8 +1,8 @@
 # Python_Capstone_Team_26
-AI-powered Waste Sorting &amp; Recycling Assistant
-###Homework Assignment 3 – Waste Management Web App (Flask + MySQL)
+# AI-powered Waste Sorting &amp; Recycling Assistant
+## Homework Assignment 3 – Waste Management Web App (Flask + MySQL)
 
-####Project Structure
+#### Project Structure
 
 <img width="662" height="396" alt="image" src="https://github.com/user-attachments/assets/24c4823d-1e15-4786-9e63-f36e16cb8540" />
 
