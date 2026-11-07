@@ -220,3 +220,7 @@ Each class has a constructor (`__init__`), initialisation methods (`from_dict()`
 **Data:** `data/waste_guidance.json` - 72 Dortmund disposal rules (source: EDG Entsorgung Dortmund).
 **Database design:** see [docs/DATABASE.md](docs/DATABASE.md).
 
+## Presentation Video
+
+🎥 **Hometask 1 Team Presentation:**  
+[Watch the video](https://drive.google.com/file/d/1z0AcNOanbPV05IWfs0ywunBzeIrHS0_2/view?usp=sharing)
