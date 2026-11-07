@@ -17,9 +17,9 @@
 #### 1.Python 3.12
 #### 2.MySQL Server 8.x (and optionally MySQL Workbench)
 #### 3.Python packages listed in requirement.txt:
-##### Flask
-##### mysql-connector-python
-##### python-dotenv
+##### *Flask
+##### *mysql-connector-python
+##### *python-dotenv
    
 
 
