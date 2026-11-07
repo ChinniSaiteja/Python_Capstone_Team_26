@@ -5,12 +5,9 @@ from typing import Union
 from PIL import Image, ImageOps, UnidentifiedImageError
 
 from classifier.config import ClassifierConfig
+from classifier.exceptions import InvalidImageError
 
 ImageSource = Union[str, Path, bytes, Image.Image]
-
-
-class InvalidImageError(ValueError):
-    """Raised when an uploaded file is not a usable image."""
 
 
 class ImagePreprocessor:

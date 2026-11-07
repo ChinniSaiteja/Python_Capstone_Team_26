@@ -1,5 +1,7 @@
 from dataclasses import dataclass, field
 
+from classifier.exceptions import InvalidConfigError
+
 
 @dataclass
 class ClassifierConfig:
@@ -25,8 +27,8 @@ class ClassifierConfig:
         for name in ("confidence_threshold", "detection_threshold",
                      "min_detection_score", "overlap_iou"):
             if not 0.0 <= getattr(self, name) <= 1.0:
-                raise ValueError(f"{name} must be between 0 and 1")
+                raise InvalidConfigError(f"{name} must be between 0 and 1", {name: getattr(self, name)})
         if self.max_objects <= 0:
-            raise ValueError("max_objects must be positive")
+            raise InvalidConfigError("max_objects must be positive", {"max_objects": self.max_objects})
         if self.image_size <= 0:
-            raise ValueError("image_size must be positive")
+            raise InvalidConfigError("image_size must be positive", {"image_size": self.image_size})

@@ -204,6 +204,25 @@ OWL-ViT scores are lower than CLIP probabilities, so an object counts as confide
 **Tests:** `tests/test_preprocessor.py`, `test_category_mapper.py`, `test_waste_classifier.py`, `test_waste_detector.py`, `test_evaluator.py` (fake models, no download needed).
 **Details and class diagram:** [docs/CLASSIFIER.md](docs/CLASSIFIER.md).
 
+**Home Assignment 4 - Exception handling (`classifier/exceptions.py`):**
+
+| Class | Code | HTTP | When |
+|---|---|---|---|
+| `ClassifierError` | `CLASSIFIER_ERROR` | 500 | base class of every error of this subsystem |
+| `InvalidImageError` | `INVALID_IMAGE` | 400 | upload missing, empty, broken, too large or wrong format |
+| `ModelUnavailableError` | `MODEL_UNAVAILABLE` | 503 | the CLIP / OWL-ViT model failed or could not be loaded |
+| `InvalidConfigError` | `INVALID_CONFIG` | 500 | a setting is out of range, e.g. threshold 1.5 |
+
+`ClassifierErrorHandler` is the error-handling class: `WasteClassifier` and `WasteDetector`
+send every exception to it. Known errors keep their message; unexpected ones are logged with
+the full traceback and replaced by `ModelUnavailableError`, so no internal details reach the
+user. It counts errors per code and registers a Flask error handler that answers with the
+error's JSON body (`to_dict()`) and HTTP status.
+
+Flask routes (`classifier/api.py`): `POST /api/classifier/classify`, `POST /api/classifier/detect`,
+`GET /api/classifier/health`. Tested with Flask's test client in `tests/test_classifier_api.py`
+(10 tests) and `tests/test_classifier_errors.py` (12 tests), with fake models.
+
 ## Subsystem 4 - Data Management & AI Guidance (Ha Le Thu)
 
 **Classes (Home Assignment 1):** `database/models.py`

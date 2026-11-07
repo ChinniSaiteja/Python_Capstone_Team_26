@@ -12,8 +12,15 @@ from classifier.config import ClassifierConfig
 from classifier.detection_model import DetectionModel, ZeroShotOwlVitModel
 from classifier.detection_result import DetectedObject, DetectionResult
 from classifier.evaluator import ModelEvaluator
+from classifier.exceptions import (
+    ClassifierError,
+    ClassifierErrorHandler,
+    InvalidConfigError,
+    InvalidImageError,
+    ModelUnavailableError,
+)
 from classifier.model import ClassifierModel, ZeroShotClipModel
-from classifier.preprocessor import ImagePreprocessor, InvalidImageError
+from classifier.preprocessor import ImagePreprocessor
 from classifier.result import PredictionResult
 from classifier.status import ClassifierStatus
 from classifier.waste_classifier import WasteClassifier
@@ -21,6 +28,8 @@ from classifier.waste_detector import WasteDetector
 
 __all__ = [
     "CategoryMapper",
+    "ClassifierError",
+    "ClassifierErrorHandler",
     "ClassifierConfig",
     "ClassifierModel",
     "ClassifierStatus",
@@ -28,8 +37,10 @@ __all__ = [
     "DetectionModel",
     "DetectionResult",
     "ImagePreprocessor",
+    "InvalidConfigError",
     "InvalidImageError",
     "ModelEvaluator",
+    "ModelUnavailableError",
     "PredictionResult",
     "WasteClassifier",
     "WasteDetector",

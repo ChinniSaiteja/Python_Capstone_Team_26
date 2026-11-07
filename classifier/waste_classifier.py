@@ -1,15 +1,13 @@
-import logging
 import time
 from typing import Optional
 
 from classifier.category_mapper import CategoryMapper
 from classifier.config import ClassifierConfig
+from classifier.exceptions import ClassifierErrorHandler
 from classifier.model import ClassifierModel, ZeroShotClipModel
-from classifier.preprocessor import ImagePreprocessor, ImageSource, InvalidImageError
+from classifier.preprocessor import ImagePreprocessor, ImageSource
 from classifier.result import PredictionResult
 from classifier.status import ClassifierStatus
-
-logger = logging.getLogger(__name__)
 
 
 class WasteClassifier:
@@ -30,6 +28,7 @@ class WasteClassifier:
         self.mapper = mapper or CategoryMapper()
         self.preprocessor = ImagePreprocessor(self.config)
         self.model = model or ZeroShotClipModel(self.config, self.mapper.labels)
+        self.error_handler = ClassifierErrorHandler("The classifier is currently unavailable")
 
     @property
     def confidence_threshold(self) -> float:
@@ -49,17 +48,16 @@ class WasteClassifier:
         try:
             raw = self.preprocessor.validate(image)
             prepared = self.preprocessor.preprocess(raw)
-        except InvalidImageError as exc:
-            return PredictionResult(ClassifierStatus.INVALID_IMAGE, message=str(exc))
+        except Exception as exc:
+            status, message = self.error_handler.to_status(exc)
+            return PredictionResult(status, message=message)
 
         start = time.perf_counter()
         try:
             label, confidence = self.model.predict(prepared)
-        except Exception:
-            logger.exception("Model inference failed")
-            return PredictionResult(
-                ClassifierStatus.ERROR, message="The classifier is currently unavailable"
-            )
+        except Exception as exc:  # e.g. model download or memory error
+            status, message = self.error_handler.to_status(exc)
+            return PredictionResult(status, message=message)
         inference_ms = (time.perf_counter() - start) * 1000  # NFR 1: performance
 
         category = self.mapper.map_category(label)

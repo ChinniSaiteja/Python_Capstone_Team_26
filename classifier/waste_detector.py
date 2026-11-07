@@ -1,15 +1,13 @@
-import logging
 import time
 from typing import List, Optional
 
 from classifier.category_mapper import CategoryMapper
 from classifier.config import ClassifierConfig
+from classifier.exceptions import ClassifierErrorHandler
 from classifier.detection_model import DetectionModel, RawDetection, ZeroShotOwlVitModel
 from classifier.detection_result import DetectedObject, DetectionResult
-from classifier.preprocessor import ImagePreprocessor, ImageSource, InvalidImageError
+from classifier.preprocessor import ImagePreprocessor, ImageSource
 from classifier.status import ClassifierStatus
-
-logger = logging.getLogger(__name__)
 
 
 class WasteDetector:
@@ -30,6 +28,7 @@ class WasteDetector:
         self.mapper = mapper or CategoryMapper()
         self.preprocessor = ImagePreprocessor(self.config)
         self.model = model or ZeroShotOwlVitModel(self.config, self.mapper.labels)
+        self.error_handler = ClassifierErrorHandler("The detector is currently unavailable")
 
     @property
     def detection_threshold(self) -> float:
@@ -48,17 +47,16 @@ class WasteDetector:
     def detect(self, image: ImageSource) -> DetectionResult:
         try:
             prepared = self.preprocessor.prepare_for_detection(self.preprocessor.validate(image))
-        except InvalidImageError as exc:
-            return DetectionResult(ClassifierStatus.INVALID_IMAGE, message=str(exc))
+        except Exception as exc:
+            status, message = self.error_handler.to_status(exc)
+            return DetectionResult(status, message=message)
 
         start = time.perf_counter()
         try:
             raw = self.model.detect(prepared)
-        except Exception:
-            logger.exception("Object detection failed")
-            return DetectionResult(
-                ClassifierStatus.ERROR, message="The detector is currently unavailable"
-            )
+        except Exception as exc:  # e.g. model download or memory error
+            status, message = self.error_handler.to_status(exc)
+            return DetectionResult(status, message=message)
         inference_ms = (time.perf_counter() - start) * 1000
 
         objects = [self._to_object(d) for d in self._remove_overlaps(raw)]
