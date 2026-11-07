@@ -130,6 +130,11 @@ Provides recognition events one at a time through the iterator protocol.
 | GLASS_BOTTLE | GLASS | ROUTE_GLASS |
 | PAPER | PAPER | ROUTE_PAPER |
 
+## Presentation Link
+
+🎥 **Hometask 2 Team Presentation:**  
+[Watch the presentation](https://drive.google.com/file/d/1gKJxorQ-BtUkzhMVpQ_FXTjjjgRdRQ7i/view?usp=sharing)
+
 ## Running the Demo
 
 ```bash
